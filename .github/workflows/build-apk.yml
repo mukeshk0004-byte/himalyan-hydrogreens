@@ -14,26 +14,27 @@ jobs:
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
+          distribution: 'temurin'
           java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
           channel: 'stable'
 
-      - name: Create Android Platform Files
-        run: flutter create . --platforms=android --org=com.himalyan
-
-      - name: Install Dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
+      - name: Setup complete Flutter Android Project
+        run: |
+          mkdir build_dir
+          cd build_dir
+          flutter create himalyan_hydrogreens --org=com.himalyan
+          cd himalyan_hydrogreens
+          cp ../../lib/main.dart lib/main.dart
+          flutter pub add intl
+          flutter build apk --release --no-tree-shake-icons
+          cp build/app/outputs/flutter-apk/app-release.apk ../../app-release.apk
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: himalyan-hydrogreens-app
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: app-release.apk
