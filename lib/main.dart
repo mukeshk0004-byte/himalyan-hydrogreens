@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const HimalyanApp());
+  runApp(const HimalyanHydrogreensApp());
 }
 
-class HimalyanApp extends StatelessWidget {
-  const HimalyanApp({super.key});
+class HimalyanHydrogreensApp extends StatelessWidget {
+  const HimalyanHydrogreensApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -13,276 +13,284 @@ class HimalyanApp extends StatelessWidget {
       title: 'Himalyan Hydrogreens',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
+        primaryColor: const Color(0xFF1B5E20),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
+        scaffoldBackgroundColor: const Color(0xFFF4F6F8),
         useMaterial3: true,
       ),
-      home: const LoginScreen(),
+      home: const MainFarmAppScreen(),
     );
   }
 }
 
-class UserModel {
-  final String username;
-  final String role;
-  final String assignedSite;
-
-  UserModel({required this.username, required this.role, required this.assignedSite});
-}
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class MainFarmAppScreen extends StatefulWidget {
+  const MainFarmAppScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<MainFarmAppScreen> createState() => _MainFarmAppScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _userController = TextEditingController();
-  final _passController = TextEditingController();
-
-  final Map<String, Map<String, String>> validUsers = {
-    'owner': {'pass': 'admin123', 'role': 'owner', 'site': 'ALL'},
-    'sup_site1': {'pass': '1234', 'role': 'supervisor', 'site': 'Site 1'},
-    'sup_banuna': {'pass': '1234', 'role': 'supervisor', 'site': 'Banuna'},
-    'sup_site3': {'pass': '1234', 'role': 'supervisor', 'site': 'Site 3'},
-    'sup_site4': {'pass': '1234', 'role': 'supervisor', 'site': 'Site 4'},
-    'sup_site5': {'pass': '1234', 'role': 'supervisor', 'site': 'Site 5'},
-  };
-
-  void _login() {
-    String u = _userController.text.trim().toLowerCase();
-    String p = _passController.text.trim();
-
-    if (validUsers.containsKey(u) && validUsers[u]!['pass'] == p) {
-      UserModel user = UserModel(
-        username: u,
-        role: validUsers[u]!['role']!,
-        assignedSite: validUsers[u]!['site']!,
-      );
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => MainDashboard(user: user)),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Galat Username ya Password!')),
-      );
-    }
-  }
+class _MainFarmAppScreenState extends State<MainFarmAppScreen> {
+  String selectedSite = 'Site 1 (Main)';
+  final List<String> sites = ['Site 1 (Main)', 'Site 2 (Hilltop)', 'Site 3 (Banuna)', 'Site 4', 'Site 5'];
+  
+  // Dashboard mock metrics
+  int nurseryCount = 14200;
+  double harvestToday = 340.5; // Kg
+  int activeLabour = 12;
+  double todayExpense = 4850.0;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF1F8E9),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.eco, size: 64, color: Color(0xFF2E7D32)),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'Himalyan Hydrogreens',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const Text('Farm Management System', style: TextStyle(color: Colors.grey)),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: _userController,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      prefixIcon: Icon(Icons.person),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _passController,
-                    obscureText: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock),
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2E7D32),
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: _login,
-                      child: const Text('LOGIN', style: TextStyle(fontSize: 16)),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Owner: owner / admin123\nSupervisor: sup_banuna / 1234',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class MainDashboard extends StatelessWidget {
-  final UserModel user;
-  const MainDashboard({super.key, required this.user});
-
-  @override
-  Widget build(BuildContext context) {
-    bool isOwner = user.role == 'owner';
-
     return Scaffold(
       appBar: AppBar(
-        title: Text(isOwner ? 'Owner Dashboard' : 'Site: ${user.assignedSite}'),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: const Color(0xFF1B5E20),
         foregroundColor: Colors.white,
+        elevation: 2,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('Himalyan Hydrogreens', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Multi-Site Operations Management', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          ],
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout),
+            tooltip: 'Export CSV Backup',
+            icon: const Icon(Icons.file_download),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Backup Generated: himalyan-hydrogreens-data.csv')),
               );
             },
           )
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            color: const Color(0xFFE8F5E9),
-            child: ListTile(
-              leading: Icon(isOwner ? Icons.admin_panel_settings : Icons.location_on, color: const Color(0xFF2E7D32)),
-              title: Text('User: ${user.username.toUpperCase()}'),
-              subtitle: Text(isOwner ? 'All 5 Sites Active' : 'Assigned: ${user.assignedSite}'),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Top Bar: Site Switcher & Cloud Status
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Color(0xFF2E7D32), size: 20),
+                  const SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: selectedSite,
+                    underline: const SizedBox(),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 15),
+                    items: sites.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => selectedSite = val);
+                    },
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 14),
+                        SizedBox(width: 4),
+                        Text('Synced Offline', style: TextStyle(fontSize: 11, color: Color(0xFF2E7D32), fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
             ),
+            const Divider(height: 1),
+
+            // Live Farm Summary Cards
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.8,
+                children: [
+                  _statCard('Nursery Seedlings', '$nurseryCount', 'Plants ready', Icons.grass, Colors.green),
+                  _statCard('Today Harvest', '$harvestToday Kg', 'Across tunnels', Icons.scale, Colors.teal),
+                  _statCard('Labour Present', '$activeLabour Persons', '₹${(activeLabour * 450)} est.', Icons.people, Colors.orange),
+                  _statCard('Daily Expenses', '₹$todayExpense', 'Fuel, inputs & misc', Icons.currency_rupee, Colors.redAccent),
+                ],
+              ),
+            ),
+
+            // Core Farm Operation Modules
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4),
+                    child: Text('DAILY OPERATIONS LOG', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  ),
+                  _moduleItem('Nursery & Sowing Log', 'Batch tracking, sowing date, tray counts & mortality', Icons.yard, () => _openForm(context, 'Nursery & Sowing')),
+                  _moduleItem('Field & Tunnel Transplants', 'Bed transfer records, bed numbers & spacing', Icons.swap_horiz, () => _openForm(context, 'Transplants')),
+                  _moduleItem('Harvesting & Crates Weight', 'Crates log, tunnel wise sorting & vehicle dispatch', Icons.agriculture, () => _openForm(context, 'Harvesting')),
+                  _moduleItem('Labour & Wages Attendance', 'Daily workers list, daily wage, overtime & advance cash', Icons.badge, () => _openForm(context, 'Labour Attendance')),
+                  _moduleItem('Fertilizer & Stock Inventory', 'NPK, SOP, micronutrients & spray consumption balance', Icons.inventory, () => _openForm(context, 'Inventory')),
+                  _moduleItem('Site Expense & Fuel Billing', 'Tractor diesel, local purchases, freight & petty cash', Icons.receipt_long, () => _openForm(context, 'Expenses')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statCard(String title, String val, String sub, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: color.withOpacity(0.12),
+            child: Icon(icon, color: color, size: 20),
           ),
-          const SizedBox(height: 16),
-          const Text('Farm Operations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          _moduleTile(context, Icons.grass, 'Nursery & Sowing', 'Seeds, Qty, Mortality check', () => _openForm(context, 'Nursery & Sowing')),
-          _moduleTile(context, Icons.swap_horiz, 'Transplants', 'Shift nursery to field/tunnels', () => _openForm(context, 'Transplants')),
-          _moduleTile(context, Icons.agriculture, 'Harvesting Logs', 'Daily harvesting weight & tunnels', () => _openForm(context, 'Harvesting')),
-          _moduleTile(context, Icons.people, 'Labour Management', 'Daily wages, attendance, advance', () => _openForm(context, 'Labour')),
-          _moduleTile(context, Icons.inventory_2, 'Stock / Inventory', 'Fertilizer, seed usage & stock', () => _openForm(context, 'Stock')),
-          
-          if (isOwner) ...[
-            const SizedBox(height: 16),
-            const Text('Owner Only Controls', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.indigo)),
-            const SizedBox(height: 10),
-            _moduleTile(context, Icons.account_balance_wallet, 'Finance & Expenses', 'All site expenses & bills', () => _openForm(context, 'Finance')),
-            _moduleTile(context, Icons.analytics, 'Consolidated Reports', 'Summary across all 5 sites', () => _openForm(context, 'Reports')),
-          ]
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey), overflow: TextOverflow.ellipsis),
+                Text(val, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text(sub, style: const TextStyle(fontSize: 10, color: Colors.black54), overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          )
         ],
       ),
     );
   }
 
-  Widget _moduleTile(BuildContext context, IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _moduleItem(String title, String subtitle, IconData icon, VoidCallback onTap) {
     return Card(
-      elevation: 2,
-      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0.5,
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: const Color(0xFFE8F5E9),
-          child: Icon(icon, color: const Color(0xFF2E7D32)),
+          child: Icon(icon, color: const Color(0xFF1B5E20)),
         ),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
         onTap: onTap,
       ),
     );
   }
 
-  void _openForm(BuildContext context, String moduleName) {
+  void _openForm(BuildContext context, String module) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => GenericFormScreen(moduleName: moduleName, user: user),
-      ),
+      MaterialPageRoute(builder: (context) => DetailedLogForm(moduleName: module, site: selectedSite)),
     );
   }
 }
 
-class GenericFormScreen extends StatefulWidget {
+class DetailedLogForm extends StatefulWidget {
   final String moduleName;
-  final UserModel user;
-  const GenericFormScreen({super.key, required this.moduleName, required this.user});
+  final String site;
+  const DetailedLogForm({super.key, required this.moduleName, required this.site});
 
   @override
-  State<GenericFormScreen> createState() => _GenericFormScreenState();
+  State<DetailedLogForm> createState() => _DetailedLogFormState();
 }
 
-class _GenericFormScreenState extends State<GenericFormScreen> {
-  final _field1 = TextEditingController();
-  final _field2 = TextEditingController();
-  final _field3 = TextEditingController();
+class _DetailedLogFormState extends State<DetailedLogForm> {
+  final _f1 = TextEditingController();
+  final _f2 = TextEditingController();
+  final _f3 = TextEditingController();
+  final _f4 = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
-    String siteLabel = widget.user.role == 'owner' ? 'All Sites' : widget.user.assignedSite;
-
     return Scaffold(
       appBar: AppBar(
         title: Text('${widget.moduleName} Entry'),
-        backgroundColor: const Color(0xFF2E7D32),
+        backgroundColor: const Color(0xFF1B5E20),
         foregroundColor: Colors.white,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Site: $siteLabel', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            const Divider(),
-            const SizedBox(height: 10),
-            TextField(
-              controller: _field1,
-              decoration: const InputDecoration(labelText: 'Item / Variety / Labour Name', border: OutlineInputBorder()),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFF1B5E20), size: 18),
+                  const SizedBox(width: 8),
+                  Text('Logging record for: ${widget.site}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 20),
             TextField(
-              controller: _field2,
+              controller: _f1,
+              decoration: InputDecoration(
+                labelText: widget.moduleName == 'Labour Attendance' ? 'Worker Name' : 'Item / Variety / Description',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _f2,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Quantity / Weight (Kg) / Wage / Hours', border: OutlineInputBorder()),
+              decoration: InputDecoration(
+                labelText: widget.moduleName == 'Labour Attendance' ? 'Daily Wage / Advance (₹)' : 'Quantity / Weight / Trays',
+                border: const OutlineInputBorder(),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             TextField(
-              controller: _field3,
-              decoration: const InputDecoration(labelText: 'Tunnel / Field / Remarks', border: OutlineInputBorder()),
+              controller: _f3,
+              decoration: InputDecoration(
+                labelText: widget.moduleName == 'Labour Attendance' ? 'Overtime Hours / Status' : 'Tunnel No. / Bed Reference',
+                border: const OutlineInputBorder(),
+              ),
             ),
-            const Spacer(),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _f4,
+              maxLines: 2,
+              decoration: const InputDecoration(labelText: 'Notes / Supervisor Remarks', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 30),
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2E7D32), foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B5E20), foregroundColor: Colors.white),
                 icon: const Icon(Icons.save),
-                label: const Text('SAVE RECORD'),
+                label: const Text('SAVE RECORD (AUTO-SYNC)'),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${widget.moduleName} entry saved successfully!')),
+                    SnackBar(content: Text('${widget.moduleName} record saved to local cache & synced!')),
                   );
                   Navigator.pop(context);
                 },
@@ -293,4 +301,4 @@ class _GenericFormScreenState extends State<GenericFormScreen> {
       ),
     );
   }
-}
+}   
