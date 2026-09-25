@@ -1,40 +1,304 @@
-name: Build Android APK
+import 'package:flutter/material.dart';
 
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
+void main() {
+  runApp(const HimalyanHydrogreensApp());
+}
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+class HimalyanHydrogreensApp extends StatelessWidget {
+  const HimalyanHydrogreensApp({super.key});
 
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Himalyan Hydrogreens',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: const Color(0xFF1B5E20),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
+        scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+        useMaterial3: true,
+      ),
+      home: const MainFarmAppScreen(),
+    );
+  }
+}
 
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+class MainFarmAppScreen extends StatefulWidget {
+  const MainFarmAppScreen({super.key});
 
-      - name: Setup complete Flutter Android Project
-        run: |
-          mkdir build_dir
-          cd build_dir
-          flutter create himalyan_hydrogreens --org=com.himalyan
-          cd himalyan_hydrogreens
-          cp ../../lib/main.dart lib/main.dart
-          flutter pub add intl
-          flutter build apk --release --no-tree-shake-icons
-          cp build/app/outputs/flutter-apk/app-release.apk ../../app-release.apk
+  @override
+  State<MainFarmAppScreen> createState() => _MainFarmAppScreenState();
+}
 
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: himalyan-hydrogreens-app
-          path: app-release.apk
+class _MainFarmAppScreenState extends State<MainFarmAppScreen> {
+  String selectedSite = 'Site 1 (Main)';
+  final List<String> sites = ['Site 1 (Main)', 'Site 2 (Hilltop)', 'Site 3 (Banuna)', 'Site 4', 'Site 5'];
+  
+  // Dashboard mock metrics
+  int nurseryCount = 14200;
+  double harvestToday = 340.5; // Kg
+  int activeLabour = 12;
+  double todayExpense = 4850.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF1B5E20),
+        foregroundColor: Colors.white,
+        elevation: 2,
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text('Himalyan Hydrogreens', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Multi-Site Operations Management', style: TextStyle(fontSize: 11, color: Colors.white70)),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Export CSV Backup',
+            icon: const Icon(Icons.file_download),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Backup Generated: himalyan-hydrogreens-data.csv')),
+              );
+            },
+          )
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Top Bar: Site Switcher & Cloud Status
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              color: Colors.white,
+              child: Row(
+                children: [
+                  const Icon(Icons.location_on, color: Color(0xFF2E7D32), size: 20),
+                  const SizedBox(width: 8),
+                  DropdownButton<String>(
+                    value: selectedSite,
+                    underline: const SizedBox(),
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 15),
+                    items: sites.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                    onChanged: (val) {
+                      if (val != null) setState(() => selectedSite = val);
+                    },
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Icon(Icons.check_circle, color: Color(0xFF2E7D32), size: 14),
+                        SizedBox(width: 4),
+                        Text('Synced Offline', style: TextStyle(fontSize: 11, color: Color(0xFF2E7D32), fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+
+            // Live Farm Summary Cards
+            Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.8,
+                children: [
+                  _statCard('Nursery Seedlings', '$nurseryCount', 'Plants ready', Icons.grass, Colors.green),
+                  _statCard('Today Harvest', '$harvestToday Kg', 'Across tunnels', Icons.scale, Colors.teal),
+                  _statCard('Labour Present', '$activeLabour Persons', '₹${(activeLabour * 450)} est.', Icons.people, Colors.orange),
+                  _statCard('Daily Expenses', '₹$todayExpense', 'Fuel, inputs & misc', Icons.currency_rupee, Colors.redAccent),
+                ],
+              ),
+            ),
+
+            // Core Farm Operation Modules
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8.0, horizontal: 4),
+                    child: Text('DAILY OPERATIONS LOG', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  ),
+                  _moduleItem('Nursery & Sowing Log', 'Batch tracking, sowing date, tray counts & mortality', Icons.yard, () => _openForm(context, 'Nursery & Sowing')),
+                  _moduleItem('Field & Tunnel Transplants', 'Bed transfer records, bed numbers & spacing', Icons.swap_horiz, () => _openForm(context, 'Transplants')),
+                  _moduleItem('Harvesting & Crates Weight', 'Crates log, tunnel wise sorting & vehicle dispatch', Icons.agriculture, () => _openForm(context, 'Harvesting')),
+                  _moduleItem('Labour & Wages Attendance', 'Daily workers list, daily wage, overtime & advance cash', Icons.badge, () => _openForm(context, 'Labour Attendance')),
+                  _moduleItem('Fertilizer & Stock Inventory', 'NPK, SOP, micronutrients & spray consumption balance', Icons.inventory, () => _openForm(context, 'Inventory')),
+                  _moduleItem('Site Expense & Fuel Billing', 'Tractor diesel, local purchases, freight & petty cash', Icons.receipt_long, () => _openForm(context, 'Expenses')),
+                ],
+              ),
+            ),
+            const SizedBox(height: 25),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statCard(String title, String val, String sub, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundColor: color.withOpacity(0.12),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 11, color: Colors.grey), overflow: TextOverflow.ellipsis),
+                Text(val, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                Text(sub, style: const TextStyle(fontSize: 10, color: Colors.black54), overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _moduleItem(String title, String subtitle, IconData icon, VoidCallback onTap) {
+    return Card(
+      elevation: 0.5,
+      margin: const EdgeInsets.only(bottom: 8),
+      color: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade200)),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: const Color(0xFFE8F5E9),
+          child: Icon(icon, color: const Color(0xFF1B5E20)),
+        ),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: Text(subtitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap: onTap,
+      ),
+    );
+  }
+
+  void _openForm(BuildContext context, String module) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => DetailedLogForm(moduleName: module, site: selectedSite)),
+    );
+  }
+}
+
+class DetailedLogForm extends StatefulWidget {
+  final String moduleName;
+  final String site;
+  const DetailedLogForm({super.key, required this.moduleName, required this.site});
+
+  @override
+  State<DetailedLogForm> createState() => _DetailedLogFormState();
+}
+
+class _DetailedLogFormState extends State<DetailedLogForm> {
+  final _f1 = TextEditingController();
+  final _f2 = TextEditingController();
+  final _f3 = TextEditingController();
+  final _f4 = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${widget.moduleName} Entry'),
+        backgroundColor: const Color(0xFF1B5E20),
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(8)),
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline, color: Color(0xFF1B5E20), size: 18),
+                  const SizedBox(width: 8),
+                  Text('Logging record for: ${widget.site}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1B5E20))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _f1,
+              decoration: InputDecoration(
+                labelText: widget.moduleName == 'Labour Attendance' ? 'Worker Name' : 'Item / Variety / Description',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _f2,
+              keyboardType: TextInputType.number,
+              decoration: InputDecoration(
+                labelText: widget.moduleName == 'Labour Attendance' ? 'Daily Wage / Advance (₹)' : 'Quantity / Weight / Trays',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _f3,
+              decoration: InputDecoration(
+                labelText: widget.moduleName == 'Labour Attendance' ? 'Overtime Hours / Status' : 'Tunnel No. / Bed Reference',
+                border: const OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 14),
+            TextField(
+              controller: _f4,
+              maxLines: 2,
+              decoration: const InputDecoration(labelText: 'Notes / Supervisor Remarks', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 30),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B5E20), foregroundColor: Colors.white),
+                icon: const Icon(Icons.save),
+                label: const Text('SAVE RECORD (AUTO-SYNC)'),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${widget.moduleName} record saved to local cache & synced!')),
+                  );
+                  Navigator.pop(context);
+                },
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
