@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Original UI APK
 
 on:
   push:
@@ -22,11 +22,67 @@ jobs:
         with:
           channel: 'stable'
 
-      - name: Build Project
+      - name: Build Webview Android App
         run: |
-          flutter create my_app --org=com.himalyan --project-name=himalyan_hydrogreens
-          cp lib/main.dart my_app/lib/main.dart
-          cd my_app
+          flutter create webapp --org=com.himalyan --project-name=himalyan_hydrogreens
+          cd webapp
+          flutter pub add webview_flutter
+          
+          mkdir -p assets
+          cp ../index.html assets/index.html
+          [ -d ../css ] && cp -r ../css assets/ || true
+          [ -d ../js ] && cp -r ../js assets/ || true
+
+          sed -i '/flutter:/a \  assets:\n    - assets/\n    - assets/index.html' pubspec.yaml
+
+          cat << 'EOF' > lib/main.dart
+          import 'package:flutter/material.dart';
+          import 'package:webview_flutter/webview_flutter.dart';
+
+          void main() {
+            WidgetsFlutterBinding.ensureInitialized();
+            runApp(const MaterialApp(
+              debugShowCheckedModeBanner: false,
+              home: FarmOriginalApp(),
+            ));
+          }
+
+          class FarmOriginalApp extends StatefulWidget {
+            const FarmOriginalApp({super.key});
+            @override
+            State<FarmOriginalApp> createState() => _FarmOriginalAppState();
+          }
+
+          class _FarmOriginalAppState extends State<FarmOriginalApp> {
+            late final WebViewController _controller;
+
+            @override
+            void initState() {
+              super.initState();
+              _controller = WebViewController()
+                ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                ..loadFlutterAsset('assets/index.html');
+            }
+
+            @override
+            Widget build(BuildContext context) {
+              return PopScope(
+                canPop: false,
+                onPopInvokedWithResult: (didPop, result) async {
+                  if (await _controller.canGoBack()) {
+                    _controller.goBack();
+                  }
+                },
+                child: Scaffold(
+                  body: SafeArea(
+                    child: WebViewWidget(controller: _controller),
+                  ),
+                ),
+              );
+            }
+          }
+          EOF
+
           flutter build apk --release --no-tree-shake-icons
           cp build/app/outputs/flutter-apk/app-release.apk ../app-release.apk
 
