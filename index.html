@@ -35,11 +35,11 @@
 <div class="card"><h3>💾 Local Backup</h3><div class="actions"><button onclick="exportBackup()">Export Backup</button><label><button onclick="document.getElementById('backupFile').click()">Import Backup</button></label><input id="backupFile" class="hidden" type="file" accept="application/json" onchange="importBackup(this.files[0])"><button onclick="downloadAll()">Download All CSV</button></div></div><div class="card owner-only"><button class="danger" onclick="clearData()">Clear All Local Data</button></div></section>
 </main>
 <nav id="bottom" class="bottom hidden">
-  <button type="button" onclick="go('nursery')" ontouchend="go('nursery')">🌱<br>Nursery</button>
-  <button type="button" onclick="go('field')" ontouchend="go('field')">🌾<br>My Crops</button>
-  <button type="button" onclick="go('hydro')" ontouchend="go('hydro')">💧<br>Hydro</button>
-  <button type="button" onclick="go('labour')" ontouchend="go('labour')">👷<br>Labour</button>
-  <button type="button" onclick="go('stock')" ontouchend="go('stock')">📦<br>Stock</button>
+  <button type="button" onclick="go('nursery')">🌱<br>Nursery</button>
+  <button type="button" onclick="go('field')">🌾<br>My Crops</button>
+  <button type="button" onclick="go('hydro')">💧<br>Hydro</button>
+  <button type="button" onclick="go('labour')">👷<br>Labour</button>
+  <button type="button" onclick="go('stock')">📦<br>Stock</button>
 </nav><div id="toast" class="toast"></div>
 <script>
 'use strict';
@@ -51,6 +51,9 @@ const FERT_LIST=['19:19:19','13:00:45','12:61:00','00:52:34','00:00:50','12:32:1
 
 let db=emptyDB(),role='';
 let deferredInstallPrompt=null;
+let lastBackPressTime=0;
+let currentPanelId='login';
+
 window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredInstallPrompt=e;console.log('App install prompt ready')});
 
 function triggerInstallApp(){
@@ -74,8 +77,8 @@ function update(k,o){const i=db[k].findIndex(x=>x.id===o.id);if(i<0)return false
 function toast(s){const t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(window._t);window._t=setTimeout(()=>t.style.display='none',2500)}
 function drawer(x){document.getElementById('drawer').classList.toggle('open',x);document.getElementById('shade').classList.toggle('open',x)}
 
-// APK & PWA Bulletproof Navigation
-function go(targetId){
+// Mobile Phone Hardware Back Button Handler & Step Navigation
+function go(targetId, fromBackHistory = false){
   try {
     drawer(false);
     if(targetId==='login'){ logout(); return; }
@@ -97,6 +100,7 @@ function go(targetId){
     const target = document.getElementById(targetId);
     if(target){
       target.classList.add('active');
+      currentPanelId = targetId;
     }
     
     const bNav = document.getElementById('bottom');
@@ -107,6 +111,11 @@ function go(targetId){
         btn.classList.toggle('active', oc.includes(`'${targetId}'`));
       });
     }
+
+    // Android/Browser history state for phone back button
+    if(!fromBackHistory){
+      history.pushState({panel: targetId}, '', '#'+targetId);
+    }
     
     render();
     window.scrollTo(0, 0);
@@ -115,9 +124,64 @@ function go(targetId){
   }
 }
 
-function login(){const r=v('loginRole');if(r==='owner'&&v('loginPin')!==db.ownerPin)return toast('Wrong Owner PIN');role=r;sessionStorage.setItem(ROLEKEY,r);localStorage.setItem(ROLEKEY,r);document.getElementById('roleBadge').textContent='Role: '+r;go('dashboard');toast('Login successful')}
-function logout(){role='';sessionStorage.removeItem(ROLEKEY);localStorage.removeItem(ROLEKEY);drawer(false);document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById('login').classList.add('active');document.getElementById('bottom').classList.add('hidden');document.getElementById('roleBadge').textContent='Not logged in'}
+// Window PopState: catches phone back button click
+window.addEventListener('popstate', (e)=>{
+  // 1. If Drawer menu is open, first close drawer
+  const d = document.getElementById('drawer');
+  if(d && d.classList.contains('open')){
+    drawer(false);
+    history.pushState({panel: currentPanelId}, '', '#'+currentPanelId);
+    return;
+  }
+
+  // 2. If inside any sub-panel, pressing back returns to Dashboard
+  if(currentPanelId !== 'dashboard' && currentPanelId !== 'login'){
+    go('dashboard', true);
+    history.pushState({panel: 'dashboard'}, '', '#dashboard');
+    return;
+  }
+
+  // 3. If already on Dashboard, ask before exiting or double-tap to exit
+  if(currentPanelId === 'dashboard'){
+    const now = Date.now();
+    if(now - lastBackPressTime < 2500){
+      // User tapped back twice within 2.5 seconds -> exit
+      window.history.go(-1);
+    } else {
+      lastBackPressTime = now;
+      history.pushState({panel: 'dashboard'}, '', '#dashboard');
+      toast('Press back again to exit Himalyan Hydrogreens');
+    }
+  }
+});
+
+function login(){
+  const r=v('loginRole');
+  if(r==='owner'&&v('loginPin')!==db.ownerPin)return toast('Wrong Owner PIN');
+  role=r;
+  sessionStorage.setItem(ROLEKEY,r);
+  localStorage.setItem(ROLEKEY,r);
+  document.getElementById('roleBadge').textContent='Role: '+r;
+  history.replaceState({panel: 'dashboard'}, '', '#dashboard');
+  go('dashboard', true);
+  toast('Login successful');
+}
+
+function logout(){
+  role='';
+  sessionStorage.removeItem(ROLEKEY);
+  localStorage.removeItem(ROLEKEY);
+  drawer(false);
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.getElementById('login').classList.add('active');
+  document.getElementById('bottom').classList.add('hidden');
+  document.getElementById('roleBadge').textContent='Not logged in';
+  currentPanelId='login';
+  history.replaceState({panel: 'login'}, '', '#login');
+}
+
 function updateOwnerPin(){if(role!=='owner')return toast('Owner only');const np=v('setNewPin');if(!np||np.length<4)return toast('Passcode must be at least 4 digits');db.ownerPin=np;persist();document.getElementById('setNewPin').value='';toast('Owner passcode updated successfully')}
+
 function init(){
   load();
   populate();
@@ -129,17 +193,11 @@ function init(){
   if(r){
     role=r;
     document.getElementById('roleBadge').textContent='Role: '+r;
-    go('dashboard');
+    history.replaceState({panel: 'dashboard'}, '', '#dashboard');
+    go('dashboard', true);
+  } else {
+    history.replaceState({panel: 'login'}, '', '#login');
   }
-  // Hardware/Touch Event bindings for Android APK webviews
-  document.querySelectorAll('#bottom button').forEach(btn=>{
-    btn.addEventListener('touchend', (e)=>{
-      e.preventDefault();
-      const m = btn.getAttribute('onclick')||'';
-      const match = m.match(/go\('([^']+)'\)/);
-      if(match && match[1]) go(match[1]);
-    }, {passive:false});
-  });
   render();
 }
 
