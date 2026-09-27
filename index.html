@@ -47,11 +47,54 @@ function add(k,o){if(!db[k])db[k]=[];const before=db[k].length;o.id=id();o.creat
 function update(k,o){const i=db[k].findIndex(x=>x.id===o.id);if(i<0)return false;const old=db[k][i];o.updatedAt=Date.now();db[k][i]=o;if(!persist()){db[k][i]=old;return false}return true}
 function toast(s){const t=document.getElementById('toast');t.textContent=s;t.style.display='block';clearTimeout(window._t);window._t=setTimeout(()=>t.style.display='none',2500)}
 function drawer(x){document.getElementById('drawer').classList.toggle('open',x);document.getElementById('shade').classList.toggle('open',x)}
-function go(id){drawer(false);if(id==='login'){logout();return}if(!role)return;if(id==='finance'&&role!=='owner')return toast('Owner only access');document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('bottom').classList.toggle('hidden',id==='login');render();window.scrollTo(0,0)}
-function login(){const r=v('loginRole');if(r==='owner'&&v('loginPin')!==db.ownerPin)return toast('Wrong Owner PIN');role=r;sessionStorage.setItem(ROLEKEY,r);document.getElementById('roleBadge').textContent='Role: '+r;go('dashboard');toast('Login successful')}
-function logout(){role='';sessionStorage.removeItem(ROLEKEY);drawer(false);document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById('login').classList.add('active');document.getElementById('bottom').classList.add('hidden');document.getElementById('roleBadge').textContent='Not logged in'}
+
+// APK WebView Safe Navigation
+function go(targetId){
+  try {
+    drawer(false);
+    if(targetId==='login'){ logout(); return; }
+    
+    // Role check fallback for APK
+    if(!role){
+      role = localStorage.getItem(ROLEKEY) || sessionStorage.getItem(ROLEKEY) || 'supervisor';
+      const rb = document.getElementById('roleBadge');
+      if(rb) rb.textContent = 'Role: ' + role;
+    }
+    
+    if(targetId==='finance' && role!=='owner'){
+      toast('Owner only access');
+      return;
+    }
+    
+    const panels = document.querySelectorAll('.panel');
+    panels.forEach(p=>p.classList.remove('active'));
+    
+    const target = document.getElementById(targetId);
+    if(target){
+      target.classList.add('active');
+    }
+    
+    const bNav = document.getElementById('bottom');
+    if(bNav){
+      bNav.classList.toggle('hidden', targetId==='login');
+      // Highlight active button
+      document.querySelectorAll('#bottom button').forEach(btn=>{
+        const oc = btn.getAttribute('onclick')||'';
+        btn.classList.toggle('active', oc.includes(`'${targetId}'`));
+      });
+    }
+    
+    render();
+    window.scrollTo({top:0, behavior:'instant'});
+  } catch(e) {
+    console.error('Nav error:', e);
+  }
+}
+
+function login(){const r=v('loginRole');if(r==='owner'&&v('loginPin')!==db.ownerPin)return toast('Wrong Owner PIN');role=r;sessionStorage.setItem(ROLEKEY,r);localStorage.setItem(ROLEKEY,r);document.getElementById('roleBadge').textContent='Role: '+r;go('dashboard');toast('Login successful')}
+function logout(){role='';sessionStorage.removeItem(ROLEKEY);localStorage.removeItem(ROLEKEY);drawer(false);document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));document.getElementById('login').classList.add('active');document.getElementById('bottom').classList.add('hidden');document.getElementById('roleBadge').textContent='Not logged in'}
 function updateOwnerPin(){if(role!=='owner')return toast('Owner only');const np=v('setNewPin');if(!np||np.length<4)return toast('Passcode must be at least 4 digits');db.ownerPin=np;persist();document.getElementById('setNewPin').value='';toast('Owner passcode updated successfully')}
-function init(){load();populate();const cc=document.getElementById('cloudConfig');if(cc&&!cc.value)cc.value=JSON.stringify(getCloudConfig(),null,2);initCloud();document.querySelectorAll('input[type=date]').forEach(x=>x.value=today());const r=sessionStorage.getItem(ROLEKEY);if(r){role=r;document.getElementById('roleBadge').textContent='Role: '+r;go('dashboard')}render()}
+function init(){load();populate();const cc=document.getElementById('cloudConfig');if(cc&&!cc.value)cc.value=JSON.stringify(getCloudConfig(),null,2);initCloud();document.querySelectorAll('input[type=date]').forEach(x=>x.value=today());const r=localStorage.getItem(ROLEKEY)||sessionStorage.getItem(ROLEKEY);if(r){role=r;document.getElementById('roleBadge').textContent='Role: '+r;go('dashboard')}render()}
 function populate(){['nCrop','fTCrop','fHCrop','hTCrop','hHCrop','hrCrop'].forEach(i=>{const el=document.getElementById(i);if(el){el.innerHTML=CROPS.map(x=>`<option>${x}</option>`).join('');updateVarieties(i.replace('Crop','Var'),CROPS[0])}});['hTTunnel','hHTunnel'].forEach(i=>{const el=document.getElementById(i);if(el)el.innerHTML=TUNNELS.map(x=>`<option>${x}</option>`).join('')});['faFert1','faFert2','faFert3'].forEach(i=>{const el=document.getElementById(i);if(el)el.innerHTML='<option value="">None</option>'+FERT_LIST.map(x=>`<option value="${x}">${x}</option>`).join('')});document.getElementById('nCrop').value='Lettuce';updateVarieties('nVar','Lettuce');renderStockItems()}
 function updateVarieties(id,crop){const s=document.getElementById(id);if(!s)return;s.innerHTML=(VARS[crop]||['General']).map(x=>`<option>${x}</option>`).join('')}
 function saveObj(k,o,msg){if(!o.date)o.date=today();if(!add(k,o))return;toast(msg);render()}
